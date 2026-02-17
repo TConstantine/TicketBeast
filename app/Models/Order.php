@@ -5,6 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Override;
 
+/**
+ * @property int $amount
+ * @property string $email
+ */
 class Order extends Model
 {
 
@@ -34,7 +38,7 @@ class Order extends Model
         return [
             'email' => $this->email,
             'ticket_quantity' => $this->tickets()->count(),
-            'amount' => $this->tickets()->count() * $this->concert->ticket_price
+            'amount' => $this->amount
         ];
     }
 }
