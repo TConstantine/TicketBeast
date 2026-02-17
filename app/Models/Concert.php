@@ -3,8 +3,11 @@
 namespace App\Models;
 
 use App\Exceptions\NotEnoughTicketsException;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Concert extends Model
 {
@@ -16,7 +19,7 @@ class Concert extends Model
         'date' => 'datetime'
     ];
 
-    public function scopePublished($query)
+    public function scopePublished(Builder $query): Builder
     {
         return $query->whereNotNull('published_at');
     }
@@ -36,7 +39,7 @@ class Concert extends Model
         return number_format($this->ticket_price / 100, 2);
     }
 
-    public function orders()
+    public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
     }
@@ -46,15 +49,26 @@ class Concert extends Model
         return $this->hasMany(Ticket::class);
     }
 
-    public function orderTickets($email, $ticketQuantity)
+    public function orderTickets($email, $ticketQuantity): Order
     {
-        $tickets = $this->tickets()->available()->take($ticketQuantity)->get();
-        if ($tickets->count() < $ticketQuantity) {
+        $tickets = $this->findTickets($ticketQuantity);
+        return $this->createOrder($email, $tickets);
+    }
+
+    public function findTickets(int $quantity): Collection
+    {
+        $tickets = $this->tickets()->available()->take($quantity)->get();
+        if ($tickets->count() < $quantity) {
             throw new NotEnoughTicketsException;
         }
+        return $tickets;
+    }
+
+    public function createOrder(string $email, Collection $tickets): Order
+    {
         $order = $this->orders()->create([
             'email' => $email,
-            'amount' => $ticketQuantity * $this->ticket_price
+            'amount' => $tickets->count() * $this->ticket_price
         ]);
         foreach ($tickets as $ticket) {
             $order->tickets()->save($ticket);

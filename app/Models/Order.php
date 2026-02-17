@@ -3,28 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Override;
 
-/**
- * @property int $amount
- * @property string $email
- */
 class Order extends Model
 {
 
     protected $guarded = [];
 
-    public function concert()
+    public function concert(): BelongsTo
     {
         return $this->belongsTo(Concert::class);
     }
 
-    public function tickets()
+    public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
 
-    public function cancel()
+    public function cancel(): void
     {
         foreach ($this->tickets as $ticket) {
             $ticket->release();
@@ -33,7 +31,7 @@ class Order extends Model
     }
 
     #[Override]
-    public function toArray()
+    public function toArray(): array
     {
         return [
             'email' => $this->email,
