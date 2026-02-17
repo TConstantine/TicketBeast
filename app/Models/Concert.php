@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Concert extends Model
@@ -39,12 +40,12 @@ class Concert extends Model
         return number_format($this->ticket_price / 100, 2);
     }
 
-    public function orders(): HasMany
+    public function orders(): BelongsToMany
     {
-        return $this->hasMany(Order::class);
+        return $this->belongsToMany(Order::class, 'tickets');
     }
 
-    public function tickets()
+    public function tickets(): HasMany
     {
         return $this->hasMany(Ticket::class);
     }
@@ -66,14 +67,7 @@ class Concert extends Model
 
     public function createOrder(string $email, Collection $tickets): Order
     {
-        $order = $this->orders()->create([
-            'email' => $email,
-            'amount' => $tickets->count() * $this->ticket_price
-        ]);
-        foreach ($tickets as $ticket) {
-            $order->tickets()->save($ticket);
-        }
-        return $order;
+        return Order::forTickets($tickets, $email, $tickets->sum('price'));
     }
 
     public function addTickets(int $quantity): Concert
