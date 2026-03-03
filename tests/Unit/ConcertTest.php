@@ -102,8 +102,7 @@ class ConcertTest extends TestCase
     #[Test]
     public function cannotOrderTicketsThatHaveAlreadyBeenPurchased(): void
     {
-        $concert = Concert::factory()->create();
-        $concert->addTickets(10);
+        $concert = Concert::factory()->create()->addTickets(10);
         $concert->orderTickets('jane@example.com', 8);
         try {
             $concert->orderTickets('john@example.com', 3);
@@ -112,6 +111,42 @@ class ConcertTest extends TestCase
             $order = $concert->orders()->where('email', 'john@example.com')->first();
             $this->assertNull($order);
             $this->assertEquals(2, $concert->ticketsRemaining());
+        }
+    }
+
+    #[Test]
+    public function availableTicketsCanBeReserved(): void
+    {
+        $concert = Concert::factory()->create()->addTickets(3);
+        $this->assertEquals(3, $concert->ticketsRemaining());
+
+        $reservedTickets = $concert->reserveTickets(2);
+
+        $this->assertCount(2, $reservedTickets);
+        $this->assertEquals(1, $concert->ticketsRemaining());
+    }
+
+    #[Test]
+    public function purchasedTicketsCannotBeReserved(): void
+    {
+        $concert = Concert::factory()->create()->addTickets(3);
+        $concert->orderTickets('jane@example.com', 2);
+        try {
+            $concert->reserveTickets(2);
+        } catch (NotEnoughTicketsException $exception) {
+            $this->assertEquals(1, $concert->ticketsRemaining());
+        }
+    }
+
+    #[Test]
+    public function reservedTicketsCannotBeReserved(): void
+    {
+        $concert = Concert::factory()->create()->addTickets(3);
+        $concert->reserveTickets(2);
+        try {
+            $concert->reserveTickets(2);
+        } catch (NotEnoughTicketsException $exception) {
+            $this->assertEquals(1, $concert->ticketsRemaining());
         }
     }
 }

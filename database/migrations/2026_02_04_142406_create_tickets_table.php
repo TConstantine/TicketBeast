@@ -15,6 +15,7 @@ return new class extends Migration {
             $table->id();
             $table->unsignedInteger('concert_id');
             $table->unsignedInteger('order_id')->nullable();
+            $table->dateTime('reserved_at')->nullable();
             $table->timestamps();
         });
     }

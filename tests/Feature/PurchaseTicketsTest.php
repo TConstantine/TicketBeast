@@ -98,6 +98,36 @@ class PurchaseTicketsTest extends TestCase
     }
 
     #[Test]
+    public function ticketsAreNotPurchasableByMoreThanOneCustomerAtTheSameTime(): void
+    {
+        $concert = Concert::factory()->published()->create(['ticket_price' => 1200])->addTickets(3);
+
+        $this->paymentGateway->beforeFirstCharge(function (FakePaymentGateway $paymentGateway) use ($concert) {
+            $response = $this->orderTickets($concert, [
+                'email' => 'personB@example.com',
+                'ticket_quantity' => 1,
+                'payment_token' => $this->paymentGateway->getValidTestToken()
+            ]);
+
+            $response->assertStatus(422);
+            $this->assertThatConcertDoesNotHaveOrder($concert, 'personB@example.com');
+            $this->assertEquals(0, $this->paymentGateway->totalCharges());
+        });
+
+        $response = $this->orderTickets($concert, [
+            'email' => 'personA@example.com',
+            'ticket_quantity' => 3,
+            'payment_token' => $this->paymentGateway->getValidTestToken()
+        ]);
+
+        $response->assertStatus(201);
+        $this->assertEquals(3600, $this->paymentGateway->totalCharges());
+        $order = $concert->orders()->where('email', 'personA@example.com')->first();
+        $this->assertNotNull($order);
+        $this->assertEquals(3, $order->tickets()->count());
+    }
+
+    #[Test]
     public function emailIsRequiredToPurchaseTickets(): void
     {
         $concert = Concert::factory()->published()->create();
@@ -178,6 +208,9 @@ class PurchaseTicketsTest extends TestCase
 
     private function orderTickets(Concert $concert, array $data): TestResponse
     {
-        return $this->postJson('/concerts/' . $concert->id . '/orders', $data);
+        $savedRequest = $this->app['request'];
+        $request = $this->postJson('/concerts/' . $concert->id . '/orders', $data);
+        $this->app['request'] = $savedRequest;
+        return $request;
     }
 }
