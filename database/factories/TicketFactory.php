@@ -4,6 +4,7 @@ namespace Database\Factories;
 
 use App\Models\Concert;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Carbon;
 use Override;
 
 /**
@@ -20,5 +21,12 @@ class TicketFactory extends Factory
                 return Concert::factory()->published()->create();
             }
         ];
+    }
+
+    public function reserved(): static
+    {
+        return $this->state(fn() => [
+                    'reserved_at' => Carbon::now()
+        ]);
     }
 }

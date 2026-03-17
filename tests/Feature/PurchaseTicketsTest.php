@@ -78,6 +78,7 @@ class PurchaseTicketsTest extends TestCase
 
         $response->assertStatus(422);
         $this->assertThatConcertDoesNotHaveOrder($concert, 'john@example.com');
+        $this->assertEquals(3, $concert->ticketsRemaining());
     }
 
     #[Test]
