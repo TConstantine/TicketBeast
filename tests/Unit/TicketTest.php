@@ -4,7 +4,6 @@ namespace Tests\Unit;
 
 use App\Models\Ticket;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
-use Illuminate\Support\Carbon;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\TestCase;
 

@@ -2,18 +2,23 @@
 
 namespace App;
 
+use App\Billing\PaymentGatewayInterface;
+use App\Models\Order;
 use Illuminate\Database\Eloquent\Collection;
 
 class Reservation
 {
 
     private Collection $tickets;
+    private string $email;
 
     public function __construct(
-            Collection $tickets
+            Collection $tickets,
+            string $email
     )
     {
         $this->tickets = $tickets;
+        $this->email = $email;
     }
 
     public function totalCost(): int
@@ -24,6 +29,17 @@ class Reservation
     public function tickets(): Collection
     {
         return $this->tickets;
+    }
+
+    public function email(): string
+    {
+        return $this->email;
+    }
+
+    public function complete(PaymentGatewayInterface $paymentGateway, string $paymentToken): Order
+    {
+        $paymentGateway->charge($this->totalCost(), $paymentToken);
+        return Order::forTickets($this->tickets(), $this->email(), $this->totalCost());
     }
 
     public function cancel(): void
