@@ -27,6 +27,20 @@ class ReservationTest extends TestCase
     }
 
     #[Test]
+    public function reservedTicketsCanBeRetrieved(): void
+    {
+        $tickets = new Collection([
+            (object) ['price' => 1200],
+            (object) ['price' => 1200],
+            (object) ['price' => 1200]
+        ]);
+
+        $reservation = new Reservation($tickets);
+
+        $this->assertEquals($tickets, $reservation->tickets());
+    }
+
+    #[Test]
     public function reservedTicketsAreReleasedWhenReservationIsCancelled(): void
     {
         $tickets = new Collection([
