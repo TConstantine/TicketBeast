@@ -5,6 +5,7 @@ namespace App\Billing;
 use Closure;
 use Illuminate\Support\Collection;
 use Override;
+use Stripe\PaymentIntent;
 
 class FakePaymentGateway implements PaymentGatewayInterface
 {
@@ -18,17 +19,18 @@ class FakePaymentGateway implements PaymentGatewayInterface
     }
 
     #[Override]
-    public function charge(int $amount, string $token)
+    public function charge(int $amount, string $paymentMethod): PaymentIntent
     {
         if ($this->beforeFirstChargeCallback !== null) {
             $callback = $this->beforeFirstChargeCallback;
             $this->beforeFirstChargeCallback = null;
             $callback($this);
         }
-        if ($token !== $this->getValidTestToken()) {
+        if ($paymentMethod !== $this->getValidTestToken()) {
             throw new PaymentFailedException;
         }
         $this->charges[] = $amount;
+        return new PaymentIntent();
     }
 
     public function getValidTestToken(): string
