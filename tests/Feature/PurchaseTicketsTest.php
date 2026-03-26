@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Billing\FakePaymentGateway;
 use App\Billing\PaymentGatewayInterface;
+use App\ConfirmationNumberGeneratorInterface;
 use App\Models\Concert;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Testing\TestResponse;
 use Override;
 use PHPUnit\Framework\Attributes\Test;
+use Tests\Stub\FakeOrderConfirmationNumberGenerator;
 use Tests\TestCase;
 
 class PurchaseTicketsTest extends TestCase
@@ -29,6 +31,9 @@ class PurchaseTicketsTest extends TestCase
     #[Test]
     public function customerCanPurchaseTicketsWhenConcertIsPublished(): void
     {
+        $orderConfirmationNumberGenerator = new FakeOrderConfirmationNumberGenerator();
+        $this->app->instance(ConfirmationNumberGeneratorInterface::class, $orderConfirmationNumberGenerator);
+        
         $concert = Concert::factory()->published()->create(['ticket_price' => 3250])->addTickets(3);
 
         $response = $this->orderTickets($concert, [
@@ -39,6 +44,7 @@ class PurchaseTicketsTest extends TestCase
 
         $response->assertStatus(201);
         $response->assertJson([
+            'confirmation_number' => 'AHQ8VVDT58CKQDZPLQS4XW88',
             'email' => 'john@example.com',
             'ticket_quantity' => 3,
             'amount' => 9750
