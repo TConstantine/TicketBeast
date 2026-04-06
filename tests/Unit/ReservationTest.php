@@ -78,7 +78,7 @@ class ReservationTest extends TestCase
         $reservation = new Reservation($tickets, 'john@example.com');
         $paymentGateway = new FakePaymentGateway;
 
-        $order = $reservation->complete($paymentGateway, $paymentGateway->getValidTestToken());
+        $order = $reservation->complete($paymentGateway, $paymentGateway->getValidToken());
 
         $this->assertEquals('john@example.com', $order->email);
         $this->assertEquals(3, $order->ticketQuantity());

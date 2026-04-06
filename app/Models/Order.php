@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Billing\Charge;
 use App\ConfirmationNumberGeneratorInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -17,12 +18,13 @@ class Order extends Model
 
     protected $guarded = [];
 
-    public static function forTickets(Collection $tickets, string $email, int $amount): Order
+    public static function forTickets(Collection $tickets, string $email, Charge $charge): Order
     {
         $order = self::create([
             'confirmation_number' => app(ConfirmationNumberGeneratorInterface::class)->generate(),
             'email' => $email,
-            'amount' => $amount
+            'amount' => $charge->amount(),
+            'card_last_four' => $charge->cardLastFour()
         ]);
         foreach ($tickets as $ticket) {
             $order->tickets()->save($ticket);

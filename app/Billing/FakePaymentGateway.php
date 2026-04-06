@@ -5,45 +5,61 @@ namespace App\Billing;
 use Closure;
 use Illuminate\Support\Collection;
 use Override;
-use Stripe\PaymentIntent;
 
 class FakePaymentGateway implements PaymentGatewayInterface
 {
 
     private Collection $charges;
+    private Collection $tokens;
     private ?Closure $beforeFirstChargeCallback = null;
 
     public function __construct()
     {
         $this->charges = collect();
+        $this->tokens = collect();
     }
 
     #[Override]
-    public function charge(int $amount, string $paymentMethod): PaymentIntent
+    public function charge(int $amount, string $paymentMethod): Charge
     {
         if ($this->beforeFirstChargeCallback !== null) {
             $callback = $this->beforeFirstChargeCallback;
             $this->beforeFirstChargeCallback = null;
             $callback($this);
         }
-        if ($paymentMethod !== $this->getValidTestToken()) {
+        if (!$this->tokens->has($paymentMethod)) {
             throw new PaymentFailedException;
         }
-        $this->charges[] = $amount;
-        return new PaymentIntent();
+        $charge = new Charge([
+            'amount' => $amount,
+            'card_last_four' => substr($this->tokens[$paymentMethod], -4)
+        ]);
+        $this->charges[] = $charge;
+        return $charge;
     }
 
-    public function getValidTestToken(): string
+    #[Override]
+    public function getValidToken(string $cardNumber = '4242424242424242'): string
     {
-        return 'valid-token';
+        $token = 'fake-tok_' . str()->random(24);
+        $this->tokens[$token] = $cardNumber;
+        return $token;
     }
 
-    public function totalCharges()
+    #[Override]
+    public function newChargesDuring(callable $callback): Collection
     {
-        return $this->charges->sum();
+        $chargesFrom = $this->charges->count();
+        $callback($this);
+        return $this->charges->slice($chargesFrom)->reverse()->values();
     }
 
-    public function beforeFirstCharge(Closure $callback)
+    public function totalCharges(): int
+    {
+        return $this->charges->sum->amount();
+    }
+
+    public function beforeFirstCharge(Closure $callback): void
     {
         $this->beforeFirstChargeCallback = $callback;
     }

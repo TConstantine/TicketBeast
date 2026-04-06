@@ -38,8 +38,8 @@ class Reservation
 
     public function complete(PaymentGatewayInterface $paymentGateway, string $paymentToken): Order
     {
-        $paymentGateway->charge($this->totalCost(), $paymentToken);
-        return Order::forTickets($this->tickets(), $this->email(), $this->totalCost());
+        $charge = $paymentGateway->charge($this->totalCost(), $paymentToken);
+        return Order::forTickets($this->tickets(), $this->email(), $charge);
     }
 
     public function cancel(): void

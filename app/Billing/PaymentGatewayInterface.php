@@ -2,10 +2,13 @@
 
 namespace App\Billing;
 
-use Stripe\PaymentIntent;
+use Illuminate\Support\Collection;
 
 interface PaymentGatewayInterface
 {
+    public function charge(int $amount, string $paymentMethod): Charge;
 
-    public function charge(int $amount, string $paymentMethod): PaymentIntent;
+    public function getValidToken(string $cardNumber = ''): string;
+
+    public function newChargesDuring(callable $callback): Collection;
 }

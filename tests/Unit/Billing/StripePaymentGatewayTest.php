@@ -2,37 +2,29 @@
 
 namespace Tests\Unit\Billing;
 
-use App\Billing\PaymentFailedException;
+use App\Billing\PaymentGatewayInterface;
 use App\Billing\StripePaymentGateway;
 use Illuminate\Foundation\Testing\TestCase;
-use PHPUnit\Framework\Attributes\Test;
+use Override;
 use Stripe\StripeClient;
 
 class StripePaymentGatewayTest extends TestCase
 {
 
-    #[Test]
-    public function chargesWithValidPaymentTokenAreSuccessful(): void
+    use PaymentGatewayContractTests;
+
+    private StripeClient $client;
+
+    #[Override]
+    protected function setUp(): void
     {
-        $client = new StripeClient(config('services.stripe.secret'));
-        $paymentGateway = new StripePaymentGateway($client);
-
-        $paymentIntent = $paymentGateway->charge(2500, 'pm_card_visa');
-
-        $this->assertEquals(2500, $paymentIntent->amount);
-        $this->assertEquals('succeeded', $paymentIntent->status);
-        $this->assertCount(1, $client->charges->all(['limit' => 1])['data']);
+        parent::setUp();
+        $this->client = new StripeClient(config('services.stripe.secret'));
     }
 
-    #[Test]
-    public function chargesWithInvalidPaymentTokenFail(): void
+    #[Override]
+    protected function getPaymentGateway(): PaymentGatewayInterface
     {
-        $client = new StripeClient(config('services.stripe.secret'));
-        $paymentGateway = new StripePaymentGateway($client);
-
-        $this->expectException(PaymentFailedException::class);
-
-        $paymentGateway->charge(2500, 'invalid-payment-token');
-        $this->assertCount(0, $client->charges->all(['limit' => 1])['data']);
+        return new StripePaymentGateway($this->client);
     }
 }

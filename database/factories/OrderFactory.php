@@ -16,7 +16,9 @@ class OrderFactory extends Factory
     {
         return [
             'amount' => $this->faker->numberBetween(10),
-            'email' => $this->faker->safeEmail()
+            'email' => $this->faker->safeEmail(),
+            'confirmation_number' => $this->faker->text(16),
+            'card_last_four' => $this->faker->randomNumber(4)
         ];
     }
 }
