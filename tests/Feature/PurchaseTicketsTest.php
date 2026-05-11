@@ -6,11 +6,13 @@ use App\Billing\FakePaymentGateway;
 use App\Billing\PaymentGatewayInterface;
 use App\ConfirmationNumberGeneratorInterface;
 use App\Models\Concert;
+use App\TicketCodeGeneratorInterface;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
 use Illuminate\Testing\TestResponse;
 use Override;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Stub\FakeOrderConfirmationNumberGenerator;
+use Tests\Stub\FakeTicketCodeGenerator;
 use Tests\TestCase;
 
 class PurchaseTicketsTest extends TestCase
@@ -29,11 +31,13 @@ class PurchaseTicketsTest extends TestCase
     }
 
     #[Test]
-    public function customerCanPurchaseTicketsWhenConcertIsPublished(): void
+    public function customer_can_purchase_tickets_of_a_published_concert(): void
     {
         $orderConfirmationNumberGenerator = new FakeOrderConfirmationNumberGenerator();
         $this->app->instance(ConfirmationNumberGeneratorInterface::class, $orderConfirmationNumberGenerator);
-        
+        $ticketCodeGenerator = new FakeTicketCodeGenerator();
+        $this->app->instance(TicketCodeGeneratorInterface::class, $ticketCodeGenerator);
+
         $concert = Concert::factory()->published()->create(['ticket_price' => 3250])->addTickets(3);
 
         $response = $this->orderTickets($concert, [
@@ -46,8 +50,12 @@ class PurchaseTicketsTest extends TestCase
         $response->assertJson([
             'confirmation_number' => 'AHQ8VVDT58CKQDZPLQS4XW88',
             'email' => 'john@example.com',
-            'ticket_quantity' => 3,
-            'amount' => 9750
+            'amount' => 9750,
+            'tickets' => [
+                ['code' => 'TICKETCODE1'],
+                ['code' => 'TICKETCODE2'],
+                ['code' => 'TICKETCODE3']
+            ]
         ]);
         $this->assertEquals(9750, $this->paymentGateway->totalCharges());
         $order = $concert->orders()->where('email', 'john@example.com')->first();
