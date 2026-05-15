@@ -5,9 +5,11 @@ namespace Tests\Feature;
 use App\Billing\FakePaymentGateway;
 use App\Billing\PaymentGatewayInterface;
 use App\ConfirmationNumberGeneratorInterface;
+use App\Mail\OrderConfirmationEmail;
 use App\Models\Concert;
 use App\TicketCodeGeneratorInterface;
 use Illuminate\Foundation\Testing\DatabaseMigrations;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Testing\TestResponse;
 use Override;
 use PHPUnit\Framework\Attributes\Test;
@@ -28,6 +30,7 @@ class PurchaseTicketsTest extends TestCase
         parent::setUp();
         $this->paymentGateway = new FakePaymentGateway;
         $this->app->instance(PaymentGatewayInterface::class, $this->paymentGateway);
+        Mail::fake();
     }
 
     #[Test]
@@ -61,6 +64,9 @@ class PurchaseTicketsTest extends TestCase
         $order = $concert->orders()->where('email', 'john@example.com')->first();
         $this->assertNotNull($order);
         $this->assertEquals(3, $order->tickets()->count());
+        Mail::assertSent(OrderConfirmationEmail::class, function ($mail) use ($order) {
+            return $mail->hasTo('john@example.com') && $mail->order->id === $order->id;
+        });
     }
 
     #[Test]
